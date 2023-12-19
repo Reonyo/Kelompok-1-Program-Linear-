@@ -13,14 +13,16 @@ namespace Kelompok_1__Program_Linear_
 {
     public partial class form_main : Form
     {
-        int jumlah_variabel, jumlah_constraint,kolom,baris;
+        int jumlah_variabel, jumlah_constraint,kolom,baris,iterasi;
         string[] variabel_basis,variabel_nonbasis;
-        double[,] A, B_invers,c_B,c,b;
+        double[,] A, B_invers,c_B,c,b,tabel_slack;
+        private List<IterationData> iterationDataList;
 
-        List<IterationResult> iterationResults = new List<IterationResult>();
         public form_main()
         {
             InitializeComponent();
+            iterasi = 0;
+            iterationDataList = new List<IterationData>();
         }
 
         private void btn_generatetable_Click(object sender, EventArgs e)
@@ -48,6 +50,8 @@ namespace Kelompok_1__Program_Linear_
             A = new double[jumlah_constraint, jumlah_variabel];
             b = new double[jumlah_constraint,1];
             c_B = new double[1,jumlah_constraint];
+            tabel_slack = new double[jumlah_constraint,jumlah_constraint];
+
             variabel_basis = new string[jumlah_constraint];
             variabel_nonbasis = new string[jumlah_variabel];
             B_invers = new double[jumlah_constraint,jumlah_constraint];
@@ -76,20 +80,6 @@ namespace Kelompok_1__Program_Linear_
                     b[i - 1,0] = Convert.ToDouble(datagrid_userinput.Rows[i].Cells[datagrid_userinput.ColumnCount - 1].Value);
                 }
 
-                // Assign values for variabel_basis
-                string[] variabel_basis = new string[jumlah_constraint];
-                for (int i = 0; i < jumlah_constraint; i++)
-                {
-                    variabel_basis[i] = "s" + (i + 1);
-                }
-
-                // Assign values for variabel_nonbasis
-                string[] variabel_nonbasis = new string[jumlah_variabel];
-                for (int i = 0; i < jumlah_variabel; i++)
-                {
-                    variabel_nonbasis[i] = "x" + (i + 1);
-                }
-
                 // Assign B_invers sebagai matrix identitas
                 for (int i = 0; i < jumlah_constraint; i++)
                 {
@@ -97,6 +87,28 @@ namespace Kelompok_1__Program_Linear_
                     {
                         B_invers[i, j] = (i == j) ? 1.0 : 0.0;
                     }
+                }
+                // Assign tabel_slack sebagai matrix identitas
+                for (int i = 0; i < jumlah_constraint; i++)
+                {
+                    for (int j = 0; j < jumlah_constraint; j++)
+                    {
+                        tabel_slack[i, j] = (i == j) ? 1.0 : 0.0;
+                    }
+                }
+
+                // Assign values for variabel_basis
+                variabel_basis = new string[jumlah_constraint];
+                for (int i = 0; i < jumlah_constraint; i++)
+                {
+                    variabel_basis[i] = string.Concat("s",(i + 1).ToString());
+                }
+
+                // Assign values for variabel_nonbasis
+                variabel_nonbasis = new string[jumlah_variabel];
+                for (int i = 0; i < jumlah_variabel; i++)
+                {
+                    variabel_nonbasis[i] = string.Concat("x",(i + 1).ToString());
                 }
 
                 // Langkah Awal selesai..
@@ -132,28 +144,52 @@ namespace Kelompok_1__Program_Linear_
                 MessageBox.Show($"An error occurred: {ex.Message}");
             }
             Iteration();
+            iterasi += 1;
+            combobox_tabeliterasi.Items.Add($"Iterasi ke-{iterasi}");
+            IterationData iterationData = new IterationData
+            {
+                Basis = variabel_basis,
+                A = CopyMatrix(A),
+                TabelSlack = CopyMatrix(tabel_slack),
+                B = CopyMatrix(b),
+            };
+            iterationDataList.Add(iterationData);
         }
         private void Iteration()
         {
-            MessageBox.Show("Iterasi");
             string var_masuk, var_keluar;
             double[] a,rasio,miu;
+            double[,] E;
+            E = new double[jumlah_constraint, jumlah_constraint];
             a = new double[jumlah_constraint];
             rasio = new double[jumlah_constraint];
             miu = new double[jumlah_constraint];
 
-            A = MultiplyMatrices(B_invers, A);
-            TampilkanMatrix(A, "A");
-            b = MultiplyMatrices(B_invers, b);
-            TampilkanMatrix(b, "B");
+            // Assign B_invers sebagai matrix identitas
+            for (int i = 0; i < jumlah_constraint; i++)
+            {
+                for (int j = 0; j < jumlah_constraint; j++)
+                {
+                    B_invers[i, j] = (i == j) ? 1.0 : 0.0;
+                }
+            }
+            //Save tabel
+            IterationData iterationData = new IterationData
+            {
+                Basis = variabel_basis,
+                A = CopyMatrix(A),
+                TabelSlack = CopyMatrix(tabel_slack),
+                B = CopyMatrix(b),
+            };
+            iterationDataList.Add(iterationData);
 
+            //Variabel Masuk
             for (int i = 0;i<jumlah_constraint;i++)
             {
                 a[i] = A[i, kolom-1];
-                MessageBox.Show($"nilai a ke-{i}= {a[i]}");
+                //MessageBox.Show($"nilai a ke-{i}= {a[i]}");
             }
 
-            //Variabel Masuk
             if(kolom==-1)
             {
                 MessageBox.Show("The problem is unbounded");
@@ -171,7 +207,7 @@ namespace Kelompok_1__Program_Linear_
                 {
                     rasio[i] = (b[i,0] / a[i]);
                 }
-                MessageBox.Show($"nilai rasio ke-{i}= {rasio[i]}");
+                //MessageBox.Show($"nilai rasio ke-{i}= {rasio[i]}");
             }
             //Sekarang pilih nilai terkecil tak negatif/tak nol
             baris = -1;
@@ -190,18 +226,18 @@ namespace Kelompok_1__Program_Linear_
                 return;
             }
             //Variabel Keluar (r = baris)
-            var_keluar = variabel_basis[baris];
+            var_keluar = variabel_basis[baris-1];
 
             //Edit Nilai variabel_basis dan variabel_nonbasis
             variabel_basis[baris-1] = var_masuk;
             for(int i = 0;i<jumlah_constraint;i++)
             {
-                MessageBox.Show($"Basis ke-{i} adalah {variabel_basis[i]}");
+                //MessageBox.Show($"Basis ke-{i} adalah "+variabel_basis[i]); 
             }
             variabel_nonbasis[kolom-1] = var_keluar;
             for (int i = 0; i < jumlah_variabel; i++)
             {
-                MessageBox.Show($"Basis ke-{i} adalah {variabel_nonbasis[i]}");
+                //MessageBox.Show($"nonBasis ke-{i} adalah "+variabel_nonbasis[i]); 
             }
             c_B[0,baris-1] = c[0,kolom-1];
 
@@ -217,8 +253,6 @@ namespace Kelompok_1__Program_Linear_
                     miu[i-1] = -A[i-1, kolom-1] / A[baris-1, kolom-1];
                 }
             }
-            double[,] E;
-            E = new double[jumlah_constraint,jumlah_constraint];
             for (int i = 0; i < jumlah_constraint; i++)
             {
                 for (int j = 0; j < jumlah_constraint; j++)
@@ -239,23 +273,98 @@ namespace Kelompok_1__Program_Linear_
             }
             //B_invers baru
             B_invers = MultiplyMatrices(E, B_invers);
-            TampilkanMatrix(B_invers, "B_invers");
 
             //Uji optimalitas
-            bool optimal;
-            optimal = UjiOptimal();
+            (bool optimal,int index) = UjiOptimal();
+            kolom = index+1;
 
-            //Save tabel
-            SaveIterationResult();
+            A = MultiplyMatrices(E, A);
+            b = MultiplyMatrices(E, b);
+            tabel_slack = MultiplyMatrices(E, tabel_slack);
 
             //Rekursif
+            iterasi += 1;
+            combobox_tabeliterasi.Items.Add($"Iterasi ke-{iterasi}");
             if (optimal == false)
             {
-                MessageBox.Show("Iterasi 1 Berhasil!");
                 Iteration();
             }
-            MessageBox.Show("Selesai!");
+            else
+            {
+                double[,] Z_maks;
+                Z_maks = new double[1, 1];
+                Z_maks = MultiplyMatrices(c_B, b);
+                MessageBox.Show($"Z maks adalah {Z_maks[0,0]}");
+            }
         }
+        private double[,] CopyMatrix(double[,] matrix)
+        {
+            int rows = matrix.GetLength(0);
+            int cols = matrix.GetLength(1);
+            double[,] copy = new double[rows, cols];
+            Array.Copy(matrix, copy, matrix.Length);
+            return copy;
+        }
+        private void btn_tampilkantabel_Click(object sender, EventArgs e)
+        {
+            if (combobox_tabeliterasi.SelectedIndex >= 0 && combobox_tabeliterasi.SelectedIndex < iterationDataList.Count)
+            {
+                IterationData selectedIteration = iterationDataList[combobox_tabeliterasi.SelectedIndex];
+
+                // Clear existing columns and rows
+                datagrid_useroutput.Columns.Clear();
+                datagrid_useroutput.Rows.Clear();
+
+                // Create the column headers
+                List<string> columnHeaders = new List<string> { "Basis" };
+                for (int i = 1; i <= selectedIteration.A.GetLength(1); i++)
+                {
+                    columnHeaders.Add("x" + i);
+                }
+                // Add slack variable columns
+                for (int i = 1; i <= selectedIteration.TabelSlack.GetLength(1); i++)
+                {
+                    columnHeaders.Add("s" + i);
+                }
+                columnHeaders.Add("RHS");
+
+                // Manually add columns to the DataGridView
+                foreach (string header in columnHeaders)
+                {
+                    DataGridViewColumn column = new DataGridViewTextBoxColumn();
+                    column.HeaderText = header;
+                    column.ReadOnly = true; // Make all columns read-only
+                    column.Width = 40;
+                    datagrid_useroutput.Columns.Add(column);
+                }
+
+                // Add rows to the DataGridView
+                for (int i = 0; i < selectedIteration.A.GetLength(0); i++)
+                {
+                    DataGridViewRow row = new DataGridViewRow();
+                    row.CreateCells(datagrid_useroutput);
+
+                    row.Cells[0].Value = selectedIteration.Basis[i];
+                    for (int j = 1; j <= selectedIteration.A.GetLength(1); j++)
+                    {
+                        row.Cells[j].Value = selectedIteration.A[i, j - 1];
+                    }
+
+                    // Add slack variable values
+                    for (int j = 1; j <= selectedIteration.TabelSlack.GetLength(1); j++)
+                    {
+                        row.Cells[selectedIteration.A.GetLength(1) + j].Value = selectedIteration.TabelSlack[i, j - 1];
+                    }
+                    row.Cells[row.Cells.Count - 1].Value = selectedIteration.B[i, 0];
+                    datagrid_useroutput.Rows.Add(row);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a valid iteration.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
         static double[,] SubtractMatrices(double[,] matrixA, double[,] matrixB)
         {
             int rowsA = matrixA.GetLength(0);
@@ -296,47 +405,56 @@ namespace Kelompok_1__Program_Linear_
                 }
             }
         }
-        private bool UjiOptimal()
+        private (bool optimal, int index) UjiOptimal()
         {
-            // Get the latest iteration result
-            IterationResult latestResult = iterationResults.LastOrDefault();
-
-            if (latestResult != null)
+            int index;
+            bool ada_slack,ada_variabel,optimal;
+            double minNegativeValue = double.MaxValue;
+            ada_slack = false;
+            ada_variabel = false;
+            optimal = true;
+            index = -1;
+            foreach (var variable in variabel_nonbasis)
             {
-                // Check the type of variables in the non-basis
-                bool isSVariable = latestResult.variabel_nonbasis.Any(variable => variable.StartsWith("s"));
-
-                // Get the matrices from the latest iteration
-                double[,] C_B = latestResult.c_B;
-                double[,] B_invers = latestResult.B_invers;
-                double[,] A = GetLatestA(); // Implement a method to get the latest A matrix
-
-                // Perform the optimality test based on the type of variables in the non-basis
-                if (isSVariable)
+                if (variable.StartsWith("s"))
                 {
-                    // For non-basis with variables "s1, s2, s3"
-                    double[,] testMatrix = MultiplyMatrices(C_B, B_invers);
-                    return !testMatrix.Cast<double>().Any(value => value < 0);
+                    ada_slack = true;
                 }
-                else
+                if (variable.StartsWith("x"))
                 {
-                    // For non-basis with variables "x1, x2, ..."
-                    double[,] testMatrix = MultiplyMatrices(C_B, B_invers);
-                    testMatrix = MultiplyMatrices(testMatrix, A);
-                    return !testMatrix.Cast<double>().Any(value => value < 0);
+                    ada_variabel = true;
                 }
             }
-
-            return false; // Default to not optimal if there are no iteration results
+            if(ada_variabel==true)
+            {
+                double[,] temporary;
+                temporary = MultiplyMatrices(c_B, B_invers);
+                temporary = MultiplyMatrices(temporary, A);
+                temporary = SubtractMatrices(temporary, c);
+                for (int i = 0; i < jumlah_variabel; i++)
+                {
+                    if (temporary[0, i] < 0 && temporary[0,i]<=minNegativeValue)
+                    {
+                        minNegativeValue = temporary[0,i];
+                        index = i;
+                        optimal = false;
+                    }
+                }
+            }
+            if(ada_slack==true)
+            {
+                double[,] temporary;
+                temporary = MultiplyMatrices(c_B, B_invers);
+                for (int i = 0; i < jumlah_variabel; i++)
+                {
+                    if (temporary[0, i] < 0)
+                    {
+                        optimal = false;
+                    }
+                }
+            }
+            return (optimal,index);
         }
-
-        // Assuming you have a method to get the latest A matrix from the iteration results
-        private double[,] GetLatestA()
-        {
-            IterationResult latestResult = iterationResults.LastOrDefault();
-            return latestResult?.A;
-        }
-
         private double[,] MultiplyMatrices(double[,] matrixA, double[,] matrixB)
         {
             int rowsA = matrixA.GetLength(0);
@@ -421,52 +539,12 @@ namespace Kelompok_1__Program_Linear_
                 datagrid_userinput.Rows.Add(constraintRow);
             }
         }
-
-        private void SaveIterationResult()
-        {
-            // Create a new IterationResult object and add it to the list
-            IterationResult result = new IterationResult
-            {
-                B_invers = CopyMatrix(B_invers),
-                c_B = CopyMatrix(c_B),
-                variabel_basis = variabel_basis.Clone() as string[],
-                variabel_nonbasis = variabel_nonbasis.Clone() as string[],
-                kolom = kolom,
-                baris = baris
-            };
-
-            iterationResults.Add(result);
-        }
-
-        // Helper method to create a deep copy of a matrix
-        private double[,] CopyMatrix(double[,] original)
-        {
-            int rows = original.GetLength(0);
-            int cols = original.GetLength(1);
-
-            double[,] copy = new double[rows, cols];
-
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < cols; j++)
-                {
-                    copy[i, j] = original[i, j];
-                }
-            }
-
-            return copy;
-        }
-
-        // Helper class to represent the state of the linear program at a specific iteration
-        private class IterationResult
-        {
-            public double[,] B_invers { get; set; }
-            public double[,] c_B { get; set; }
-            public string[] variabel_basis { get; set; }
-            public string[] variabel_nonbasis { get; set; }
-            public int kolom { get; set; }
-            public int baris { get; set; }
-            public double[,] A { get; set; }
-        }
+    }
+    public class IterationData
+    {
+        public string[] Basis { get; set; }
+        public double[,] A { get; set; }
+        public double[,] TabelSlack { get; set; }
+        public double[,] B { get; set; }
     }
 }

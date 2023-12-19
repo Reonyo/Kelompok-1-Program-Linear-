@@ -36,8 +36,8 @@
             this.label2 = new System.Windows.Forms.Label();
             this.btn_calculate = new System.Windows.Forms.Button();
             this.datagrid_useroutput = new System.Windows.Forms.DataGridView();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.combobox_tabeliterasi = new System.Windows.Forms.ComboBox();
+            this.btn_tampilkantabel = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.datagrid_userinput)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.datagrid_useroutput)).BeginInit();
             this.SuspendLayout();
@@ -114,30 +114,31 @@
             this.datagrid_useroutput.Size = new System.Drawing.Size(600, 226);
             this.datagrid_useroutput.TabIndex = 8;
             // 
-            // comboBox1
+            // combobox_tabeliterasi
             // 
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(26, 309);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(114, 21);
-            this.comboBox1.TabIndex = 9;
+            this.combobox_tabeliterasi.FormattingEnabled = true;
+            this.combobox_tabeliterasi.Location = new System.Drawing.Point(36, 328);
+            this.combobox_tabeliterasi.Name = "combobox_tabeliterasi";
+            this.combobox_tabeliterasi.Size = new System.Drawing.Size(114, 21);
+            this.combobox_tabeliterasi.TabIndex = 9;
             // 
-            // button1
+            // btn_tampilkantabel
             // 
-            this.button1.Location = new System.Drawing.Point(97, 353);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 10;
-            this.button1.Text = "button1";
-            this.button1.UseVisualStyleBackColor = true;
+            this.btn_tampilkantabel.Location = new System.Drawing.Point(75, 355);
+            this.btn_tampilkantabel.Name = "btn_tampilkantabel";
+            this.btn_tampilkantabel.Size = new System.Drawing.Size(75, 23);
+            this.btn_tampilkantabel.TabIndex = 10;
+            this.btn_tampilkantabel.Text = "Tampilkan";
+            this.btn_tampilkantabel.UseVisualStyleBackColor = true;
+            this.btn_tampilkantabel.Click += new System.EventHandler(this.btn_tampilkantabel_Click);
             // 
             // form_main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 544);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.comboBox1);
+            this.Controls.Add(this.btn_tampilkantabel);
+            this.Controls.Add(this.combobox_tabeliterasi);
             this.Controls.Add(this.datagrid_useroutput);
             this.Controls.Add(this.btn_calculate);
             this.Controls.Add(this.label2);
@@ -165,8 +166,8 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button btn_calculate;
         private System.Windows.Forms.DataGridView datagrid_useroutput;
-        private System.Windows.Forms.ComboBox comboBox1;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.ComboBox combobox_tabeliterasi;
+        private System.Windows.Forms.Button btn_tampilkantabel;
     }
 }
 
